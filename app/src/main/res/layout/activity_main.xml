@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<layout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <data>
+        <variable name="config" type="io.github.chinosk.gakumas.localify.models.GakumasConfig" />
+        <variable
+            name="listener"
+            type="io.github.chinosk.gakumas.localify.ConfigListener" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="6sp"
+        tools:context=".MainActivity">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/textViewTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/black"
+                android:textSize="20sp"
+                android:text="@string/gakumas_localify" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="25sp" />
+
+            <TableLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:stretchColumns="0">
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/SwitchEnablePlugin"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:checked="@={config.enabled}"
+                        android:onCheckedChanged="@{(view, value) -> listener.onEnabledChanged(value)}"
+                        android:text="@string/enable_plugin" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        app:boxBackgroundColor="@android:color/transparent"
+                        android:background="@android:color/transparent"
+                        android:hint="@string/setFpsTitle" >
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextTargetFps"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:ems="10"
+                            android:inputType="numberSigned"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@={`` + config.targetFrameRate}"
+                            android:onTextChanged="@{(s, st, b, a) -> listener.onTargetFpsChanged(s, st, b, a)}"/>
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/SwitchEnableFreeCameraPlugin"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:checked="@={config.enableFreeCamera}"
+                        android:onCheckedChanged="@{(view, value) -> listener.onEnableFreeCameraChanged(value)}"
+                        android:text="@string/enable_free_camera" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/SwitchUnlockAllLive"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:checked="@={config.unlockAllLive}"
+                        android:onCheckedChanged="@{(view, value) -> listener.onUnlockAllLiveChanged(value)}"
+                        android:text="@string/unlockAllLive" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/SwitchLiveUseCustomeDress"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:checked="@={config.enableLiveCustomeDress}"
+                        android:onCheckedChanged="@{(view, value) -> listener.onLiveCustomeDressChanged(value)}"
+                        android:text="@string/liveUseCustomeDress" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        app:boxBackgroundColor="@android:color/transparent"
+                        android:background="@android:color/transparent"
+                        android:hint="@string/live_costume_head_id" >
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextLiveCustomeCharaId"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:ems="10"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@={config.liveCustomeHeadId}"
+                            android:onTextChanged="@{(s, st, b, a) -> listener.onLiveCustomeHeadIdChanged(s, st, b, a)}"/>
+
+                    </com.google.android.material.textfield.TextInputLayout>
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        app:boxBackgroundColor="@android:color/transparent"
+                        android:background="@android:color/transparent"
+                        android:hint="@string/live_custome_dress_id" >
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextLiveCustomeCostumeId"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:ems="10"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@={config.liveCustomeCostumeId}"
+                            android:onTextChanged="@{(s, st, b, a) -> listener.onLiveCustomeCostumeIdChanged(s, st, b, a)}"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                </TableRow>
+
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/StartGameButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:onClick="@{() -> listener.onClickStartGame()}"
+                        android:text="@string/start_game" />
+                </TableRow>
+
+            </TableLayout>
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
