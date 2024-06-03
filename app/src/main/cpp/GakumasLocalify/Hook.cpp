@@ -98,6 +98,12 @@ namespace GakumasLocal::HookMain {
         cameraTransformCache = mainCameraCache->GetTransform();
     }
 
+    Il2cppUtils::Resolution_t GetResolution() {
+        static auto GetResolution = Il2cppUtils::GetMethod("UnityEngine.CoreModule.dll", "UnityEngine",
+                                                           "Screen", "get_currentResolution");
+        return GetResolution->Invoke<Il2cppUtils::Resolution_t>();
+    }
+
     DEFINE_HOOK(void, Unity_set_fieldOfView, (UnityResolve::UnityType::Camera* _this, float value)) {
         if (Config::enableFreeCamera) {
             if (_this == mainCameraCache) {
@@ -220,7 +226,12 @@ namespace GakumasLocal::HookMain {
             return;
         }
         Local::DumpI18nItem(key->ToString(), value->ToString());
-        I18nHelper_SetValue_Orig(_this, key, value);
+        if (Config::textTest) {
+            I18nHelper_SetValue_Orig(_this, key, Il2cppString::New("[I18]" + value->ToString()));
+        }
+        else {
+            I18nHelper_SetValue_Orig(_this, key, value);
+        }
     }
 
     void* fontCache = nullptr;
@@ -280,8 +291,12 @@ namespace GakumasLocal::HookMain {
             return TMP_Text_set_text_Orig(_this, UnityResolve::UnityType::String::New(transText));
         }
 
-        // TMP_Text_set_text_Orig(_this, UnityResolve::UnityType::String::New("[TS]" + text->ToString()));
-        TMP_Text_set_text_Orig(_this, text);
+        if (Config::textTest) {
+            TMP_Text_set_text_Orig(_this, UnityResolve::UnityType::String::New("[TS]" + text->ToString()));
+        }
+        else {
+            TMP_Text_set_text_Orig(_this, text);
+        }
 
         static auto set_font = Il2cppUtils::GetMethod("Unity.TextMeshPro.dll",
                                                       "TMPro", "TMP_Text", "set_font");
@@ -302,7 +317,12 @@ namespace GakumasLocal::HookMain {
             //Log::InfoFmt("TextMeshProUGUI_Awake: %s", currText->ToString().c_str());
             std::string transText;
             if (Local::GetGenericText(currText->ToString(), &transText)) {
-                TMP_Text_set_text_Orig(_this, UnityResolve::UnityType::String::New(transText));
+                if (Config::textTest) {
+                    TMP_Text_set_text_Orig(_this, UnityResolve::UnityType::String::New("[TA]" + transText));
+                }
+                else {
+                    TMP_Text_set_text_Orig(_this, UnityResolve::UnityType::String::New(transText));
+                }
             }
         }
 
@@ -311,7 +331,7 @@ namespace GakumasLocal::HookMain {
         TextMeshProUGUI_Awake_Orig(_this, method);
     }
 
-    // TODO 文本未hook完整 思路：从tips下手...
+    // TODO 文本未hook完整
     DEFINE_HOOK(void, TextField_set_value, (void* _this, Il2cppString* value)) {
         Log::DebugFmt("TextField_set_value: %s", value->ToString().c_str());
         TextField_set_value_Orig(_this, value);
@@ -320,7 +340,6 @@ namespace GakumasLocal::HookMain {
     DEFINE_HOOK(Il2cppString*, OctoCaching_GetResourceFileName, (void* data, void* method)) {
         auto ret = OctoCaching_GetResourceFileName_Orig(data, method);
         //Log::DebugFmt("OctoCaching_GetResourceFileName: %s", ret->ToString().c_str());
-
         return ret;
     }
 
@@ -433,6 +452,71 @@ namespace GakumasLocal::HookMain {
         return VLDOF_IsActive_Orig(_this);
     }
 
+    DEFINE_HOOK(void, CampusQualityManager_set_TargetFrameRate, (void* _this, float value)) {
+        // Log::InfoFmt("CampusQualityManager_set_TargetFrameRate: %f", value);
+        const auto configFps = Config::targetFrameRate;
+        CampusQualityManager_set_TargetFrameRate_Orig(_this, configFps == 0 ? value : (float)configFps);
+    }
+
+    DEFINE_HOOK(void, CampusQualityManager_ApplySetting, (void* _this, int qualitySettingsLevel, int maxBufferPixel, float renderScale, int volumeIndex)) {
+        if (Config::targetFrameRate != 0) {
+            CampusQualityManager_set_TargetFrameRate_Orig(_this, Config::targetFrameRate);
+        }
+        if (Config::useCustomeGraphicSettings) {
+            static auto SetReflectionQuality = Il2cppUtils::GetMethod("campus-submodule.Runtime.dll", "Campus.Common",
+                                                                      "CampusQualityManager", "SetReflectionQuality");
+            static auto SetLODQuality = Il2cppUtils::GetMethod("campus-submodule.Runtime.dll", "Campus.Common",
+                                                               "CampusQualityManager", "SetLODQuality");
+
+            static auto Enum_GetValues = Il2cppUtils::GetMethod("mscorlib.dll", "System", "Enum", "GetValues");
+
+            static auto QualityLevel_klass = Il2cppUtils::GetClass("campus-submodule.Runtime.dll", "", "QualityLevel");
+
+            static auto values = Enum_GetValues->Invoke<UnityResolve::UnityType::Array<int>*>(QualityLevel_klass->GetType())->ToVector();
+            if (values.empty()) {
+                values = {0x0, 0xa, 0x14, 0x1e, 0x28, 0x64};
+            }
+            if (Config::lodQualityLevel >= values.size()) Config::lodQualityLevel = values.size() - 1;
+            if (Config::reflectionQualityLevel >= values.size()) Config::reflectionQualityLevel = values.size() - 1;
+
+            SetLODQuality->Invoke<void>(_this, values[Config::lodQualityLevel]);
+            SetReflectionQuality->Invoke<void>(_this, values[Config::reflectionQualityLevel]);
+
+            qualitySettingsLevel = Config::qualitySettingsLevel;
+            maxBufferPixel = Config::maxBufferPixel;
+            renderScale = Config::renderScale;
+            volumeIndex = Config::volumeIndex;
+
+            Log::ShowToastFmt("ApplySetting\nqualityLevel: %d, maxBufferPixel: %d\nenderScale: %f, volumeIndex: %d\nLODQualityLv: %d, ReflectionLv: %d",
+                              qualitySettingsLevel, maxBufferPixel, renderScale, volumeIndex, Config::lodQualityLevel, Config::reflectionQualityLevel);
+        }
+
+        CampusQualityManager_ApplySetting_Orig(_this, qualitySettingsLevel, maxBufferPixel, renderScale, volumeIndex);
+    }
+
+    DEFINE_HOOK(void, UIManager_UpdateRenderTarget, (UnityResolve::UnityType::Vector2 ratio, void* mtd)) {
+        // const auto resolution = GetResolution();
+        // Log::DebugFmt("UIManager_UpdateRenderTarget: %f, %f", ratio.x, ratio.y);
+        return UIManager_UpdateRenderTarget_Orig(ratio, mtd);
+    }
+
+    DEFINE_HOOK(void, VLSRPCameraController_UpdateRenderTarget, (void* _this, int width, int height, bool forceAlpha, void* method)) {
+        // const auto resolution = GetResolution();
+        // Log::DebugFmt("VLSRPCameraController_UpdateRenderTarget: %d, %d", width, height);
+        return VLSRPCameraController_UpdateRenderTarget_Orig(_this, width, height, forceAlpha, method);
+    }
+
+    DEFINE_HOOK(void*, VLUtility_GetLimitedResolution, (int32_t screenWidth, int32_t screenHeight,
+            UnityResolve::UnityType::Vector2 aspectRatio, int32_t maxBufferPixel, float bufferScale, bool firstCall)) {
+
+        if (Config::useCustomeGraphicSettings && (Config::renderScale > 1.0f)) {
+            screenWidth *= Config::renderScale;
+            screenHeight *= Config::renderScale;
+        }
+        //Log::DebugFmt("VLUtility_GetLimitedResolution: %d, %d, %f, %f", screenWidth, screenHeight, aspectRatio.x, aspectRatio.y);
+        return VLUtility_GetLimitedResolution_Orig(screenWidth, screenHeight, aspectRatio, maxBufferPixel, bufferScale, firstCall);
+    }
+
     void StartInjectFunctions() {
         const auto hookInstaller = Plugin::GetInstance().GetHookInstaller();
         UnityResolve::Init(xdl_open(hookInstaller->m_il2cppLibraryPath.c_str(), RTLD_NOW), UnityResolve::Mode::Il2Cpp);
@@ -487,6 +571,27 @@ namespace GakumasLocal::HookMain {
         ADD_HOOK(VLDOF_IsActive,
                  Il2cppUtils::GetMethodPointer("Unity.RenderPipelines.Universal.Runtime.dll", "VL.Rendering",
                                                "VLDOF", "IsActive"));
+
+        ADD_HOOK(CampusQualityManager_ApplySetting,
+                 Il2cppUtils::GetMethodPointer("campus-submodule.Runtime.dll", "Campus.Common",
+                                               "CampusQualityManager", "ApplySetting"));
+
+        ADD_HOOK(UIManager_UpdateRenderTarget,
+                 Il2cppUtils::GetMethodPointer("ADV.Runtime.dll", "Campus.ADV",
+                                               "UIManager", "UpdateRenderTarget"));
+        ADD_HOOK(VLSRPCameraController_UpdateRenderTarget,
+                 Il2cppUtils::GetMethodPointer("vl-unity.Runtime.dll", "VL.Rendering",
+                                               "VLSRPCameraController", "UpdateRenderTarget",
+                                               {"*", "*", "*"}));
+
+        ADD_HOOK(VLUtility_GetLimitedResolution,
+                 Il2cppUtils::GetMethodPointer("vl-unity.Runtime.dll", "VL",
+                                               "VLUtility", "GetLimitedResolution",
+                                               {"*", "*", "*", "*", "*", "*"}));
+
+        ADD_HOOK(CampusQualityManager_set_TargetFrameRate,
+                 Il2cppUtils::GetMethodPointer("campus-submodule.Runtime.dll", "Campus.Common",
+                                               "CampusQualityManager", "set_TargetFrameRate"));
 
         ADD_HOOK(Internal_LogException, Il2cppUtils::il2cpp_resolve_icall(
                 "UnityEngine.DebugLogHandler::Internal_LogException(System.Exception,UnityEngine.Object)"));
