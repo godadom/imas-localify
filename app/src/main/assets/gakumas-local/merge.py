@@ -1,9 +1,9 @@
 import os, json, shutil
 import posixpath
-from imas_tools.story.adapter import (
+
+from merge_utils import (
     merge_translated_csv_into_txt,
-    trivial_translation_merger,
-    line_level_dual_lang_translation_merger
+    line_level_dual_lang_translation_merger,
 )
 
 def merge_translation_files(raw_folder: str, translation_folder: str, pretranslation_folder, resource_folder: str):
@@ -59,5 +59,5 @@ if __name__ == "__main__":
     merge_translation_files(raw_folder, translation_folder, pretranslation_folder, resource_folder)
     shutil.copy(
         f"{pretranslation_folder}/etc/localization.json",
-        f"{resource_folder}/localization.json",
+        f"./local-files/localization.json",
     )
